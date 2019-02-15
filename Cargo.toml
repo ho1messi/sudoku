@@ -4,7 +4,13 @@ version = "0.1.0"
 authors = ["ho1"]
 edition = "2018"
 
-[dependencies.backend]
-path = "libs/backend"
+[dependencies.sudoku_structure]
+path = "libs/sudoku_structure"
+
+[dependencies.sudoku_solver]
+path = "libs/sudoku_solver"
+
+[dependencies.sudoku_generator]
+path = "libs/sudoku_generator"
 
 [dependencies]
