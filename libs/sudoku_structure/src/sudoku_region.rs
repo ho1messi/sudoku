@@ -1,129 +1,39 @@
 use super::utils::*;
-
-#[derive(Eq, PartialEq, Copy, Clone, Debug)]
-pub struct RegionIndex {
-    value: usize
-}
-
-impl RegionIndex {
-    pub fn zero() -> Self {
-        return Self { value: 0 };
-    }
-
-    pub fn create(index: usize) -> Result<Self, Error> {
-        if index >= 9 {
-            return Err(Error::create(ErrorKind::IndexInvalid, "Bad index seted to region"));
-        }
-
-        return Ok(Self { value: index });
-    }
-
-    pub fn set(&mut self, index: usize) -> Result<(), Error> {
-        if index >= 9 {
-            return Err(Error::create(ErrorKind::IndexInvalid, "Bad index seted to region"));
-        }
-
-        self.value = index;
-        return Ok(());
-    }
-
-    pub fn get(&self) -> usize {
-        return self.value;
-    }
-}
-
-#[derive(Eq, PartialEq, Copy, Clone, Debug)]
-pub struct GridIndex {
-    value: usize
-}
-
-impl GridIndex {
-    pub fn zero() -> Self {
-        return Self { value: 0 };
-    }
-
-    pub fn create(index: usize) -> Result<Self, Error> {
-        if index >= 9 {
-            return Err(Error::create(ErrorKind::IndexInvalid, "Bad index setted to grid"));
-        }
-
-        return Ok(Self { value: index });
-    }
-
-    pub fn set(&mut self, index: usize) -> Result<(), Error> {
-        if index >= 9 {
-            return Err(Error::create(ErrorKind::IndexInvalid, "Bad index setted to grid"));
-        }
-
-        self.value = index;
-        return Ok(());
-    }
-
-    pub fn get(&self) -> usize {
-        return self.value;
-    }
-}
-
-#[derive(PartialEq, Eq, Copy, Clone, Debug)]
-pub struct GridCoord {
-    pub row: usize,
-    pub col: usize
-}
-
-impl GridCoord {
-    pub fn zero() -> Self {
-        return Self {row: 0, col: 0};
-    }
-
-    pub fn from_index(index: GridIndex) -> Self {
-        return Self {
-            row: index.get() / 9,
-            col: index.get() % 9
-        };
-    }
-
-    pub fn to_index(&self) -> GridIndex {
-        return GridIndex::create(self.row * 9 + self.col).unwrap();
-    }
-}
+use super::sudoku_type::*;
 
 #[derive(Clone, Debug)]
 pub struct SudokuRegion {
-    cells: [GridIndex; 9]
+    cells: Vec<usize>,
+    t: SudokuType
 }
 
 impl SudokuRegion {
-    pub fn from_indices(indices: &[GridIndex; 9]) -> Self {
-        return Self { cells: indices.clone() };
-    }
-
-    pub fn from_coords(coords: &[GridCoord; 9]) -> Self {
-        let mut indices = [GridIndex::zero(); 9];
-
-        for i in 0..9 {
-            indices[i] = coords[i].to_index();
+    pub fn from_indices(indices: &[usize], t: SudokuType) -> Result<Self, Error> {
+        if indices.len() < t.get_digit_num() {
+            return Err(Error::create(
+                ErrorKind::BadSudokuIndexNum,
+                "Num of indices to create a region error"
+            ));
         }
 
-        return Self { cells: indices };
+        return Ok(Self { cells: Vec::from(indices), t });
     }
 
-    pub fn from_rect(top: usize, left: usize) -> Self {
-        let mut indices = [GridIndex::zero(); 9];
+    pub fn from_rect(top: usize, left: usize, t: SudokuType) -> Self {
+        let mut region = SudokuRegion{cells: Vec::new(), t};
 
-        let mut i = 0;
-        for row in top..(top + 3) {
-            for col in left..(left + 3) {
-                indices[i] = GridCoord { row, col }.to_index();
-                i += 1;
+        for row in top..(top + t.get_region_height()) {
+            for col in left..(left + t.get_region_width()) {
+                region.cells.push(row * t.get_digit_num() + col);
             }
         }
 
-        return Self { cells: indices };
+        return region;
     }
 
-    pub fn include(&self, index: GridIndex) -> bool {
-        for cell in self.cells.iter() {
-            if *cell == index {
+    pub fn include(&self, index: usize) -> bool {
+        for index_ref in self.cells.iter() {
+            if *index_ref == index {
                 return true;
             }
         }
@@ -131,32 +41,37 @@ impl SudokuRegion {
         return false;
     }
 
-    pub fn get_index(&self, index: RegionIndex) -> GridIndex {
-        return self.cells[index.get()];
+    pub fn get_grid_index(&self, index: usize) -> usize {
+        if index >= self.t.get_digit_num() {
+            panic!("Region index out of range");
+        }
+
+        return self.cells[index];
     }
 }
 
-impl IntoIterator for SudokuRegion {
-    type Item = GridIndex;
-    type IntoIter = SudokuRegionIter;
+impl<'a> IntoIterator for &'a SudokuRegion {
+    type Item = usize;
+    type IntoIter = SudokuRegionIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        return Self::IntoIter {cells: self.cells, index: 0};
+        return Self::IntoIter {cells: &self.cells, len: self.t.get_digit_num(), index: 0};
     }
 }
 
-pub struct SudokuRegionIter {
-    cells: [GridIndex; 9],
+pub struct SudokuRegionIter<'a> {
+    cells: &'a [usize],
+    len: usize,
     index: usize
 }
 
-impl Iterator for SudokuRegionIter {
-    type Item = GridIndex;
+impl<'a> Iterator for SudokuRegionIter<'a> {
+    type Item = usize;
 
     fn next(&mut self) -> Option<Self::Item> {
         self.index += 1;
 
-        if self.index == 9 {
+        if self.index == self.len {
             return None;
         }
 

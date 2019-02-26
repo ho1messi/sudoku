@@ -1,90 +1,88 @@
-use super::sudoku_draft::*;
+use super::sudoku_type::*;
+use super::sudoku_note::*;
 
 use self::CellValue::*;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub enum CellValue {
-    Digit(SudokuDigit),
-    Draft(SudokuDraft),
+    Digit(usize),
+    Note(SudokuNote),
     Empty
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct SudokuCell {
-    value: CellValue,
+    v: CellValue,
+    t: SudokuType,
     region_index: Option<usize>
 }
 
 impl SudokuCell {
     pub fn new() -> Self {
-        return Self {value: Empty, region_index: None};
+        return Self { v: Empty, t: SudokuType::Nine, region_index: None};
     }
 
-    pub fn create(digit: SudokuDigit) -> Self {
-        return Self {value: Digit(digit), region_index: None};
+    pub fn with_type(t: SudokuType) -> Self {
+        return Self {v: Empty, t, region_index: None};
     }
 
-    pub fn get_digit(&self) -> Option<SudokuDigit> {
-        match self.value {
+    pub fn create(digit: usize, t: SudokuType) -> Self {
+        return Self { v: Digit(digit), t, region_index: None};
+    }
+
+    pub fn get_digit(&self) -> Option<usize> {
+        match self.v {
             Digit(digit) => return Some(digit),
             _ => return None
         }
     }
 
-    pub fn set_digit(&mut self, digit: SudokuDigit) {
-        self.value = Digit(digit);
+    pub fn set_digit(&mut self, digit: usize) {
+        self.v = Digit(digit);
     }
 
     pub fn clear_digit(&mut self) {
-        self.value = Empty;
+        self.v = Empty;
     }
 
-    pub fn get_drafts(&self) -> [bool; 9] {
-        match self.value {
-            Draft(draft) => return draft.get_all(),
-            _ => return [false; 9],
-        }
-    }
-
-    pub fn set_draft(&mut self, digit: SudokuDigit, flag: bool) {
-        let mut draft = SudokuDraft::new();
-        match self.value {
+    pub fn set_note(&mut self, digit: usize, flag: bool) {
+        match &mut self.v {
             Digit(_) => return,
-            Draft(draft_t) => {
-                draft = draft_t;
-                draft.set_flag(digit, flag);
+            Note(note) => {
+                note.set_flag(digit, flag);
             },
-            Empty => draft.set_flag(digit, flag),
+            Empty => {
+                self.v = Note(SudokuNote::with_digit(digit, self.t).unwrap());
+            },
         }
-
-        self.value = Draft(draft);
     }
 
-    pub fn change_draft(&mut self, digit: SudokuDigit) {
-        let mut draft = SudokuDraft::new();
-        match self.value {
+    pub fn change_note(&mut self, digit: usize) {
+        match &mut self.v {
             Digit(_) => return,
-            Draft(draft_t) => {
-                draft = draft_t;
-                draft.change_flag(digit);
+            Note(note) => {
+                note.change_flag(digit);
             },
-            Empty => draft.change_flag(digit),
-        }
-
-        self.value = Draft(draft);
-    }
-
-    pub fn clear_drafts(&mut self) {
-        match self.value {
-            Digit(_) => {},
-            _ => self.value = Empty
+            Empty => {
+                self.v = Note(SudokuNote::with_digit(digit, self.t).unwrap());
+            },
         }
     }
 
-    pub fn fill_drafts(&mut self) {
-        match self.value {
+    pub fn clear_notes(&mut self) {
+        match self.v {
             Digit(_) => {},
-            _ => self.value = Draft(SudokuDraft::create(&[true; 9]))
+            _ => self.v = Empty
+        }
+    }
+
+    pub fn fill_notes(&mut self) {
+        match self.v {
+            Digit(_) => {},
+            _ => self.v = Note(SudokuNote::create(
+                &vec![true; self.t.get_digit_num()],
+                self.t).unwrap()
+            )
         }
     }
 

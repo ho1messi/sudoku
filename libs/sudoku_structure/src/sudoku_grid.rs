@@ -1,112 +1,127 @@
-use super::sudoku_draft::*;
+use super::utils::*;
+use super::sudoku_type::*;
 use super::sudoku_cell::SudokuCell;
 use super::sudoku_region::*;
 
 #[derive(Clone)]
 pub struct SudokuGrid {
-    cells: [SudokuCell; 81],
+    cells: Vec<SudokuCell>,
     regions: Vec<SudokuRegion>,
 }
 
 impl SudokuGrid {
-    pub fn common() -> Self {
-        let mut grid = Self {cells: [SudokuCell::new(); 81], regions: Vec::with_capacity(9)};
+    pub fn common(t: SudokuType) -> Self {
+        let mut grid = Self {
+            cells: vec![SudokuCell::new(); t.get_grid_size()],
+            regions: Vec::new()
+        };
 
-        for row in 0..3 {
-            for col in 0..3 {
-                grid.regions.push(SudokuRegion::from_rect(row * 3, col * 3));
+        let width = t.get_digit_num() / t.get_digit_num();
+        let height = t.get_digit_num() / t.get_region_height();
+        for row in 0..height {
+            for col in 0..width {
+                grid.regions.push(SudokuRegion::from_rect(
+                    row * t.get_region_width(),
+                    col * t.get_region_height(),
+                    t
+                ));
             }
         }
 
         return grid;
     }
 
-    pub fn diagonal() -> Self {
-        let mut grid = Self::common();
+    pub fn diagonal(t: SudokuType) -> Result<Self, Error> {
+        let mut grid = Self::common(t);
 
-        let mut diag1 = [GridCoord::zero(); 9];
-        let mut diag2 = [GridCoord::zero(); 9];
-        for i in 0..9 {
-            diag1[i] = GridCoord { row: i, col: i };
-            diag2[i] = GridCoord { row: i, col: 9 - i };
+        let digit_num = t.get_digit_num();
+
+        let mut diag1 = Vec::new();
+        let mut diag2 = Vec::new();
+        for i in 0..digit_num {
+            diag1.push(i * digit_num + i);
+            diag2.push(i * digit_num + digit_num - i);
         }
 
-        grid.regions.push(SudokuRegion::from_coords(&diag1));
-        grid.regions.push(SudokuRegion::from_coords(&diag2));
+        grid.regions.push(SudokuRegion::from_indices(&diag1, t)?);
+        grid.regions.push(SudokuRegion::from_indices(&diag2, t)?);
 
-        return grid;
+        return Ok(grid);
     }
 
-    pub fn irregular(region_map: &[RegionIndex; 81]) -> Self {
-        let mut grid = Self {cells: [SudokuCell::new(); 81], regions: Vec::with_capacity(9)};
-
-        let mut indices_list = [[GridIndex::zero(); 9]; 9];
-        let mut count_list = [0; 9];
-        for i in 0..81 {
-            let grid_index = GridIndex::create(i).unwrap();
-            let region_index = region_map[i].get();
-
-            indices_list[region_index][count_list[region_index]] = grid_index;
-            count_list[region_index] += 1;
+    pub fn irregular(region_map: &[usize], t: SudokuType) -> Result<Self, Error> {
+        if region_map.len() != t.get_grid_size() {
+            return Err(Error::create(
+                ErrorKind::BadSudokuIndexNum,
+                "Num of indices to create a grid error"
+            ));
         }
 
-        for indices in indices_list.iter() {
-            grid.regions.push(SudokuRegion::from_indices(indices));
+        let mut grid = Self {cells: Vec::new(), regions: Vec::new()};
+
+        let mut indices_list = Vec::new();
+        for index in 0..t.get_grid_size() {
+            let region = region_map[index];
+            while region >= indices_list.len() {
+                indices_list.push(Vec::new());
+            }
+
+            grid.cells.push(SudokuCell::new());
+            indices_list[region].push(index);
         }
 
-        return grid;
+        for region in indices_list {
+            grid.regions.push(SudokuRegion::from_indices(&region, t)?);
+        }
+
+        return Ok(grid);
     }
 
-    pub fn get_digit(&self, index: GridIndex) -> Option<SudokuDigit> {
-        return self.cells[index.get()].get_digit();
+    pub fn get_digit(&self, index: usize) -> Option<usize> {
+        return self.cells[index].get_digit();
     }
 
-    pub fn set_digit(&mut self, index: GridIndex, digit: SudokuDigit) {
-        self.cells[index.get()].set_digit(digit);
+    pub fn set_digit(&mut self, index: usize, digit: usize) {
+        self.cells[index].set_digit(digit);
     }
 
-    pub fn clear_digit(&mut self, index: GridIndex) {
-        self.cells[index.get()].clear_digit();
+    pub fn clear_digit(&mut self, index: usize) {
+        self.cells[index].clear_digit();
     }
 
-    pub fn get_drafts(&self, index: GridIndex) -> [bool; 9] {
-        return self.cells[index.get()].get_drafts();
+    pub fn set_note(&mut self, index: usize, digit: usize) {
+        self.cells[index].set_note(digit, true);
     }
 
-    pub fn set_draft(&mut self, index: GridIndex, digit: SudokuDigit) {
-        self.cells[index.get()].set_draft(digit, true);
+    pub fn remove_note(&mut self, index: usize, digit: usize) {
+        self.cells[index].set_note(digit, false);
     }
 
-    pub fn remove_draft(&mut self, index: GridIndex, digit: SudokuDigit) {
-        self.cells[index.get()].set_draft(digit, false);
+    pub fn change_note(&mut self, index: usize, digit: usize) {
+        self.cells[index].change_note(digit);
     }
 
-    pub fn change_draft(&mut self, index: GridIndex, digit: SudokuDigit) {
-        self.cells[index.get()].change_draft(digit);
+    pub fn clear_notes(&mut self, index: usize) {
+        self.cells[index].clear_notes();
     }
 
-    pub fn clear_drafts(&mut self, index: GridIndex) {
-        self.cells[index.get()].clear_drafts();
-    }
-
-    pub fn fill_drafts(&mut self, index: GridIndex) {
-        self.cells[index.get()].fill_drafts();
+    pub fn fill_notes(&mut self, index: usize) {
+        self.cells[index].fill_notes();
     }
 
     pub fn get_region_num(&self) -> usize {
         return self.regions.len();
     }
 
-    pub fn region_include(&self, i: usize, index: GridIndex) -> bool {
-        return self.regions[i].include(index);
+    pub fn region_include(&self, region_index: usize, index: usize) -> bool {
+        return self.regions[region_index].include(index);
     }
 
-    pub fn get_cell(&self, index: GridIndex) -> SudokuCell {
-        return self.cells[index.get()];
+    pub fn get_cell(&self, index: usize) -> SudokuCell {
+        return self.cells[index].clone();
     }
 
-    pub fn get_region_cell(&self, i: usize, index: RegionIndex) -> SudokuCell {
-        let grid_index = self.regions[i].get_index(index);
-        return self.cells[grid_index.get()];
+    pub fn get_cell_by_region(&self, region_index: usize, index: usize) -> SudokuCell {
+        return self.cells[self.regions[region_index].get_grid_index(index)].clone();
     }
 }

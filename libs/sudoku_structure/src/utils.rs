@@ -2,7 +2,9 @@
 pub enum ErrorKind {
     IndexInvalid,
     BadSudokuDigit,
-    BadSudokuRegionSize,
+    BadSudokuNoteNum,
+    BadSudokuIndexNum,
+    BadSudokuRegionNum,
 }
 
 #[derive(Debug)]
