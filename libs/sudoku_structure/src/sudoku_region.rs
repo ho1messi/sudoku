@@ -1,34 +1,22 @@
 use super::utils::*;
-use super::sudoku_type::*;
+use crate::sudoku_size::SudokuSizeType;
 
 #[derive(Clone, Debug)]
 pub struct SudokuRegion {
     cells: Vec<usize>,
-    t: SudokuType
+    size_type: SudokuSizeType
 }
 
 impl SudokuRegion {
-    pub fn from_indices(indices: &[usize], t: SudokuType) -> Result<Self, Error> {
-        if indices.len() < t.get_digit_num() {
+    pub fn from_indices(indices: &[usize], size_type: SudokuSizeType) -> Result<Self, Error> {
+        if indices.len() < size_type.get_digit_num() {
             return Err(Error::create(
                 ErrorKind::BadSudokuIndexNum,
                 "Num of indices to create a region error"
             ));
         }
 
-        return Ok(Self { cells: Vec::from(indices), t });
-    }
-
-    pub fn from_rect(top: usize, left: usize, t: SudokuType) -> Self {
-        let mut region = SudokuRegion{cells: Vec::new(), t};
-
-        for row in top..(top + t.get_region_height()) {
-            for col in left..(left + t.get_region_width()) {
-                region.cells.push(row * t.get_digit_num() + col);
-            }
-        }
-
-        return region;
+        return Ok(Self { cells: Vec::from(indices), size_type });
     }
 
     pub fn include(&self, index: usize) -> bool {
@@ -42,7 +30,7 @@ impl SudokuRegion {
     }
 
     pub fn get_grid_index(&self, index: usize) -> usize {
-        if index >= self.t.get_digit_num() {
+        if index >= self.size_type.get_digit_num() {
             panic!("Region index out of range");
         }
 
@@ -55,7 +43,7 @@ impl<'a> IntoIterator for &'a SudokuRegion {
     type IntoIter = SudokuRegionIter<'a>;
 
     fn into_iter(self) -> Self::IntoIter {
-        return Self::IntoIter {cells: &self.cells, len: self.t.get_digit_num(), index: 0};
+        return Self::IntoIter {cells: &self.cells, len: self.size_type.get_digit_num(), index: 0};
     }
 }
 

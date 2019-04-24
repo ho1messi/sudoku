@@ -2,7 +2,7 @@
 pub enum ErrorKind {
     IndexInvalid,
     BadSudokuDigit,
-    BadSudokuNoteNum,
+    BadCandidateIndex,
     BadSudokuIndexNum,
     BadSudokuRegionNum,
 }

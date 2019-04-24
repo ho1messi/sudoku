@@ -1,88 +1,89 @@
-use super::sudoku_type::*;
-use super::sudoku_note::*;
+use super::candidate::*;
+use super::sudoku_size::*;
 
 use self::CellValue::*;
 
 #[derive(Clone, Debug)]
 pub enum CellValue {
-    Digit(usize),
-    Note(SudokuNote),
-    Empty
+    CVDigit(usize),
+    CVCandidate(Candidate),
+    CVEmpty
 }
 
 #[derive(Clone, Debug)]
 pub struct SudokuCell {
-    v: CellValue,
-    t: SudokuType,
+    value: CellValue,
+    size_type: SudokuSizeType,
     region_index: Option<usize>
 }
 
 impl SudokuCell {
     pub fn new() -> Self {
-        return Self { v: Empty, t: SudokuType::Nine, region_index: None};
+        return Self { value: CVEmpty, size_type: SudokuSizeType::Nine, region_index: None};
     }
 
-    pub fn with_type(t: SudokuType) -> Self {
-        return Self {v: Empty, t, region_index: None};
+    pub fn with_type(size_type: SudokuSizeType) -> Self {
+        return Self {value: CVEmpty, size_type, region_index: None};
     }
 
-    pub fn create(digit: usize, t: SudokuType) -> Self {
-        return Self { v: Digit(digit), t, region_index: None};
+    pub fn create(digit: usize, size_type: SudokuSizeType) -> Self {
+        return Self { value: CVDigit(digit), size_type, region_index: None};
     }
 
     pub fn get_digit(&self) -> Option<usize> {
-        match self.v {
-            Digit(digit) => return Some(digit),
+        match self.value {
+            CVDigit(digit) => return Some(digit),
             _ => return None
         }
     }
 
     pub fn set_digit(&mut self, digit: usize) {
-        self.v = Digit(digit);
+        self.value = CVDigit(digit);
     }
 
     pub fn clear_digit(&mut self) {
-        self.v = Empty;
+        self.value = CVEmpty;
     }
 
     pub fn set_note(&mut self, digit: usize, flag: bool) {
-        match &mut self.v {
-            Digit(_) => return,
-            Note(note) => {
+        match &mut self.value {
+            CVDigit(_) => return,
+            CVCandidate(note) => {
                 note.set_flag(digit, flag);
             },
-            Empty => {
-                self.v = Note(SudokuNote::with_digit(digit, self.t).unwrap());
+            CVEmpty => {
+                let mut candidate = Candidate::with_size(self.size_type);
+                candidate.set_flag(digit, true);
+                self.value = CVCandidate(candidate);
             },
         }
     }
 
     pub fn change_note(&mut self, digit: usize) {
-        match &mut self.v {
-            Digit(_) => return,
-            Note(note) => {
+        match &mut self.value {
+            CVDigit(_) => return,
+            CVCandidate(note) => {
                 note.change_flag(digit);
             },
-            Empty => {
-                self.v = Note(SudokuNote::with_digit(digit, self.t).unwrap());
+            CVEmpty => {
+                let mut candidate = Candidate::with_size(self.size_type);
+                candidate.set_flag(digit, true);
+                self.value = CVCandidate(candidate);
             },
         }
     }
 
     pub fn clear_notes(&mut self) {
-        match self.v {
-            Digit(_) => {},
-            _ => self.v = Empty
+        match self.value {
+            CVDigit(_) => {},
+            _ => self.value = CVEmpty
         }
     }
 
     pub fn fill_notes(&mut self) {
-        match self.v {
-            Digit(_) => {},
-            _ => self.v = Note(SudokuNote::create(
-                &vec![true; self.t.get_digit_num()],
-                self.t).unwrap()
-            )
+        match self.value {
+            CVDigit(_) => {},
+            _ => self.value = CVCandidate(Candidate::create_full(self.size_type)),
         }
     }
 

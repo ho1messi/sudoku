@@ -1,7 +1,78 @@
 use super::utils::*;
-use super::sudoku_type::*;
 use super::sudoku_cell::SudokuCell;
 use super::sudoku_region::*;
+use crate::sudoku_size::SudokuSizeType;
+
+static STANDARD_SIX_INDICES: [[usize; 6]; 18] = [
+    // sub grid
+    [ 0,  1,  2,  6,  7,  8],
+    [ 3,  4,  5,  9, 10, 11],
+    [12, 13, 14, 18, 19, 20],
+    [15, 16, 17, 21, 22, 23],
+    [24, 25, 26, 30, 31, 32],
+    [27, 28, 29, 33, 34, 35],
+
+    // row
+    [ 0,  1,  2,  3,  4,  5],
+    [ 6,  7,  8,  9, 10, 11],
+    [12, 13, 14, 15, 16, 17],
+    [18, 19, 20, 21, 22, 23],
+    [24, 25, 26, 27, 28, 29],
+    [30, 31, 32, 33, 34, 35],
+
+    // column
+    [ 0,  6, 12, 18, 24, 30],
+    [ 1,  7, 13, 19, 25, 31],
+    [ 2,  8, 14, 20, 26, 32],
+    [ 3,  9, 15, 21, 27, 33],
+    [ 4, 10, 16, 22, 28, 34],
+    [ 5, 11, 17, 23, 29, 35],
+];
+
+static STANDARD_NINE_INDICES: [[usize; 9]; 27] = [
+    // sub grid
+    [ 0,  1,  2,  9, 10, 11, 18, 19, 20],
+    [ 3,  4,  5, 12, 13, 14, 21, 22, 23],
+    [ 6,  7,  8, 15, 16, 17, 24, 25, 26],
+    [27, 28, 29, 36, 37, 38, 45, 46, 47],
+    [30, 31, 32, 39, 40, 41, 48, 49, 50],
+    [33, 34, 35, 42, 43, 44, 51, 52, 53],
+    [54, 55, 56, 63, 64, 65, 72, 73, 74],
+    [57, 58, 59, 66, 67, 68, 75, 76, 77],
+    [60, 61, 62, 69, 70, 71, 78, 79, 80],
+
+    // row
+    [ 0,  1,  2,  3,  4,  5,  6,  7,  8],
+    [ 9, 10, 11, 12, 13, 14, 15, 16, 17],
+    [18, 19, 20, 21, 22, 23, 24, 25, 26],
+    [27, 28, 29, 30, 31, 32, 33, 34, 35],
+    [36, 37, 38, 39, 40, 41, 42, 43, 44],
+    [45, 46, 47, 48, 49, 50, 51, 52, 53],
+    [54, 55, 56, 57, 58, 59, 60, 61, 62],
+    [63, 64, 65, 66, 67, 68, 69, 70, 71],
+    [72, 73, 74, 75, 76, 77, 78, 79, 80],
+
+    // column
+    [ 0,  9, 18, 27, 36, 45, 54, 63, 72],
+    [ 1, 10, 19, 28, 37, 46, 55, 64, 73],
+    [ 2, 11, 20, 29, 38, 47, 56, 65, 74],
+    [ 3, 12, 21, 30, 39, 48, 57, 66, 75],
+    [ 4, 13, 22, 31, 40, 49, 58, 67, 76],
+    [ 5, 14, 23, 32, 41, 50, 59, 68, 77],
+    [ 6, 15, 24, 33, 42, 51, 60, 69, 78],
+    [ 7, 16, 25, 34, 43, 52, 61, 70, 79],
+    [ 8, 17, 26, 35, 44, 53, 62, 71, 80],
+];
+
+static DIAGONAL_SIX_INDICES: [[usize; 6]; 2] = [
+    [ 0,  7, 14, 21, 28, 35],
+    [ 5, 10, 15, 20, 25, 30]
+];
+
+static DIAGONAL_NINE_INDICES: [[usize; 9]; 2] = [
+    [ 0, 10, 20, 30, 40, 50, 60, 70, 80],
+    [ 8, 16, 24, 32, 40, 48, 56, 64, 72]
+];
 
 #[derive(Clone)]
 pub struct SudokuGrid {
@@ -10,71 +81,62 @@ pub struct SudokuGrid {
 }
 
 impl SudokuGrid {
-    pub fn common(t: SudokuType) -> Self {
-        let mut grid = Self {
-            cells: vec![SudokuCell::new(); t.get_grid_size()],
-            regions: Vec::new()
-        };
+    pub fn standard_six() -> Self {
+        let size_type = SudokuSizeType::Six;
 
-        let width = t.get_digit_num() / t.get_digit_num();
-        let height = t.get_digit_num() / t.get_region_height();
-        for row in 0..height {
-            for col in 0..width {
-                grid.regions.push(SudokuRegion::from_rect(
-                    row * t.get_region_width(),
-                    col * t.get_region_height(),
-                    t
-                ));
-            }
+        let cells = vec![SudokuCell::new(); size_type.get_cell_num()];
+
+        let mut regions = Vec::new();
+        for indices in STANDARD_SIX_INDICES.iter() {
+            regions.push(SudokuRegion::from_indices(indices, size_type).unwrap());
         }
 
-        return grid;
+        return Self {cells, regions};
     }
 
-    pub fn diagonal(t: SudokuType) -> Result<Self, Error> {
-        let mut grid = Self::common(t);
+    pub fn standard_nine() -> Self {
+        let size_type = SudokuSizeType::Nine;
 
-        let digit_num = t.get_digit_num();
+        let cells = vec![SudokuCell::new(); size_type.get_cell_num()];
 
-        let mut diag1 = Vec::new();
-        let mut diag2 = Vec::new();
-        for i in 0..digit_num {
-            diag1.push(i * digit_num + i);
-            diag2.push(i * digit_num + digit_num - i);
+        let mut regions = Vec::new();
+        for indices in STANDARD_NINE_INDICES.iter() {
+            regions.push(SudokuRegion::from_indices(indices, size_type).unwrap());
         }
 
-        grid.regions.push(SudokuRegion::from_indices(&diag1, t)?);
-        grid.regions.push(SudokuRegion::from_indices(&diag2, t)?);
-
-        return Ok(grid);
+        return Self {cells, regions};
     }
 
-    pub fn irregular(region_map: &[usize], t: SudokuType) -> Result<Self, Error> {
-        if region_map.len() != t.get_grid_size() {
-            return Err(Error::create(
-                ErrorKind::BadSudokuIndexNum,
-                "Num of indices to create a grid error"
-            ));
+    pub fn diagonal_six() -> Self {
+        let size_type = SudokuSizeType::Six;
+
+        let cells = vec![SudokuCell::new(); size_type.get_cell_num()];
+
+        let mut regions = Vec::new();
+        for indices in STANDARD_SIX_INDICES.iter() {
+            regions.push(SudokuRegion::from_indices(indices, size_type).unwrap());
+        }
+        for indices in DIAGONAL_SIX_INDICES.iter() {
+            regions.push(SudokuRegion::from_indices(indices, size_type).unwrap());
         }
 
-        let mut grid = Self {cells: Vec::new(), regions: Vec::new()};
+        return Self {cells, regions};
+    }
 
-        let mut indices_list = Vec::new();
-        for index in 0..t.get_grid_size() {
-            let region = region_map[index];
-            while region >= indices_list.len() {
-                indices_list.push(Vec::new());
-            }
+    pub fn diagonal_nine() -> Self {
+        let size_type = SudokuSizeType::Nine;
 
-            grid.cells.push(SudokuCell::new());
-            indices_list[region].push(index);
+        let cells = vec![SudokuCell::new(); size_type.get_cell_num()];
+
+        let mut regions = Vec::new();
+        for indices in STANDARD_NINE_INDICES.iter() {
+            regions.push(SudokuRegion::from_indices(indices, size_type).unwrap());
+        }
+        for indices in DIAGONAL_NINE_INDICES.iter() {
+            regions.push(SudokuRegion::from_indices(indices, size_type).unwrap());
         }
 
-        for region in indices_list {
-            grid.regions.push(SudokuRegion::from_indices(&region, t)?);
-        }
-
-        return Ok(grid);
+        return Self {cells, regions};
     }
 
     pub fn get_digit(&self, index: usize) -> Option<usize> {
