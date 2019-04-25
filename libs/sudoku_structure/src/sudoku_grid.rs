@@ -84,7 +84,7 @@ impl SudokuGrid {
     pub fn standard_six() -> Self {
         let size_type = SudokuSizeType::Six;
 
-        let cells = vec![SudokuCell::new(); size_type.get_cell_num()];
+        let cells = vec![SudokuCell::with_type(size_tye); size_type.get_cell_num()];
 
         let mut regions = Vec::new();
         for indices in STANDARD_SIX_INDICES.iter() {
@@ -97,7 +97,7 @@ impl SudokuGrid {
     pub fn standard_nine() -> Self {
         let size_type = SudokuSizeType::Nine;
 
-        let cells = vec![SudokuCell::new(); size_type.get_cell_num()];
+        let cells = vec![SudokuCell::with_type(size_type); size_type.get_cell_num()];
 
         let mut regions = Vec::new();
         for indices in STANDARD_NINE_INDICES.iter() {
@@ -110,7 +110,7 @@ impl SudokuGrid {
     pub fn diagonal_six() -> Self {
         let size_type = SudokuSizeType::Six;
 
-        let cells = vec![SudokuCell::new(); size_type.get_cell_num()];
+        let cells = vec![SudokuCell::with_type(size_type); size_type.get_cell_num()];
 
         let mut regions = Vec::new();
         for indices in STANDARD_SIX_INDICES.iter() {
@@ -126,7 +126,7 @@ impl SudokuGrid {
     pub fn diagonal_nine() -> Self {
         let size_type = SudokuSizeType::Nine;
 
-        let cells = vec![SudokuCell::new(); size_type.get_cell_num()];
+        let cells = vec![SudokuCell::with_type(size_type); size_type.get_cell_num()];
 
         let mut regions = Vec::new();
         for indices in STANDARD_NINE_INDICES.iter() {
