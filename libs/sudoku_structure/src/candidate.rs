@@ -38,12 +38,38 @@ impl Candidate {
         self.value[index] = flag;
     }
 
+    pub fn set_flag_and(&mut self, index: usize, flag: bool) {
+        if self.is_out_of_range(index) {
+            panic!("candidate index out of range");
+        }
+
+        self.value[index] &= flag;
+    }
+
+    pub fn set_flag_or(&mut self, index: usize, flag: bool) {
+        if self.is_out_of_range(index) {
+            panic!("candidate index out of range");
+        }
+
+        self.value[index] |= flag;
+    }
+
     pub fn change_flag(&mut self, index: usize) {
         if index >= self.size_type.get_digit_num() {
             panic!("candidate index out of range");
         }
 
         self.value[index] = !self.value[index];
+    }
+
+    pub fn apply_mask(&mut self, mask: Candidate) {
+        if self.size_type != mask.size_type {
+            panic!("candidate mask must have a same size type");
+        }
+
+        for index in 0..self.size_type.get_digit_num() {
+            self.set_flag_and(index, mask.get_flag(index));
+        }
     }
 
     pub fn clear(&mut self) {
