@@ -1,0 +1,3 @@
+building
+
+- add support to irregular sudoku
