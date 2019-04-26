@@ -127,6 +127,26 @@ impl SudokuGrid {
         return grid;
     }
 
+    pub fn custom_six(indices: &[[usize; 6]]) -> Self {
+        let mut grid = Self::six();
+
+        for indices_t in indices {
+            grid.regions.push(SudokuRegion::from_indices(indices_t, grid.size_type).unwrap());
+        }
+
+        return grid;
+    }
+
+    pub fn custom_nine(indices: &[[usize; 9]]) -> Self {
+        let mut grid = Self::nine();
+
+        for indices_t in indices {
+            grid.regions.push(SudokuRegion::from_indices(indices_t, grid.size_type).unwrap());
+        }
+
+        return grid;
+    }
+
     fn six() -> Self {
         let size_type = SudokuSizeType::Six;
 

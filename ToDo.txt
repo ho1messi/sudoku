@@ -1,3 +1,4 @@
 building
 
-- add support to irregular sudoku
+ok - add support to irregular sudoku
+- GUI with azul
