@@ -1,4 +1,3 @@
-use super::utils::*;
 use super::sudoku_cell::SudokuCell;
 use super::sudoku_region::*;
 use crate::sudoku_size::SudokuSizeType;
