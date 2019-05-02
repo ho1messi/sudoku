@@ -14,3 +14,4 @@ path = "libs/sudoku_solver"
 path = "libs/sudoku_generator"
 
 [dependencies]
+conrod = {version = "0.55.0", features = ["glium", "winit"]}

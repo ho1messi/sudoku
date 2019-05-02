@@ -1,4 +1,6 @@
 building
 
 ok - add support to irregular sudoku
-- GUI with azul
+- welcome page
+- standard sudoku ui
+- GUI with conrod
